@@ -1,0 +1,29 @@
+	<SELECT class="form-control" id="medidas" name="medidas[]"    multiple style=" min-height: 150px;">
+					<option value="">Sin Peso</option>	 
+										<option id="900ml" value="900ml">900ml</option>		 				
+
+					<option id="1 Unidad" value="1 Unidad">1 Unidad</option>		 				
+					<option id="2KG" value="2KG">2KG</option>		 				
+					<option id="1.5KG" value="1.5KG">1.5KG</option>		 				
+					<option id="1KG" value="1KG">1KG</option>		 				
+					<option id="1/2 kilo" value="1/2 kilo">1/2 kilo</option>		 				
+					<option id="1/4 kilo" value="1/4 kilo">1/4 kilo</option>	 
+					<option id="1/2 HORMA" value="1/2 HORMA">1/2 HORMA</option>		  
+					<option id="HORMA ENTERA" value="HORMA ENTERA">HORMA ENTERA</option>	  
+					</SELECT> 
+
+   <?php
+					 $arrayMedidas=explode(",",$fila["medidas"]);
+				for($i = 0; $i < count($arrayMedidas); $i++)
+				{
+				 ?>
+					  
+					<script type="text/javascript">
+					document.getElementById("<?php echo $arrayMedidas[$i];?>").selected = true;
+
+		
+					</script>
+					<?php
+				}
+				?>
+				
