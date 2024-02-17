@@ -64,12 +64,11 @@
                   </div><!-- /.row -->
                 </div>
 				
-				     <div class="box-footer">
-					 <a class="btn btn-app">
-                    <i class="fa fa-play"></i> Play
+				     <div class="box-footer" style="text-align:center;">
+				      	 <a class="btn btn-app" href="examen.php?id=<?php echo $fila["id_examen"];?>">
+                    <i class="fa fa-play"></i> Ingresar
                   </a>
-					 <a href="" class="">Ingresar</a>
-					  </div>
+ 					  </div>
 					  
               </div><!-- /.widget-user -->
 			  
