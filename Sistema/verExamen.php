@@ -10,16 +10,76 @@
           </h1>
           <ol class="breadcrumb">
             <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
-            <li class="active"> Listado de Examenes </li>
+            <li class="active"> Ver Examene </li>
           </ol>
         </section>
 
         <!-- Main content -->
         <section class="content">
           
+
+
         <?php 
-                    $id_examen=$_GET["id"];
-					$sql="select * from examen where estado='1' and id_examen='$id_examen'";
+        $id_usuario=$_SESSION['idusuario'];
+        $fecha=date("Y-m-d H:i:s");
+			if(isset($_POST["Finalizar"])){
+				$id_examen=filtroInyeccion($_POST["id_examen"]);
+
+                $sqlPreguntas="select preguntas.* from preguntas  where preguntas.estado='1' and id_examen='$id_examen' order by numero asc ";
+                $resPreguntas=$mysqli->query($sqlPreguntas);
+                while($filaPreguntas=mysqli_fetch_array($resPreguntas)){ 
+                    $puntajeObtenido=0;
+                    $respuestaAlumno="";
+                    $id_pregunta=$filaPreguntas["id_pregunta"];
+                    $tipo=$filaPreguntas["tipo"];
+
+                    $id_respuesta=filtroInyeccion($_POST["pregunta$id_pregunta"]);
+                    $respuestaCorrecta=$filaPreguntas["respuesta_correcta"];
+
+                    if($id_respuesta==$respuestaCorrecta){
+                        $puntajeObtenido=$filaPreguntas["puntaje"];
+                    }
+                    if($tipo=="textarea"){
+                        $respuestaAlumno=filtroInyeccion($_POST["pregunta$id_pregunta"]);
+                        $id_respuesta=0;
+                    }
+
+                    $validoSiRespondio="select * from alumnos_examen where id_usuario='$id_usuario' and id_examen='$id_examen' and id_pregunta='$id_pregunta' ";
+                    $resvalidoSiRespondio=$mysqli->query($validoSiRespondio);
+ 
+                    $row=mysqli_num_rows($resvalidoSiRespondio);
+
+                    if($row>0){
+
+                        $filavalidoSiRespondio=mysqli_fetch_array($resvalidoSiRespondio);
+                        $id_alumnos_examen=$filavalidoSiRespondio["id_alumnos_examen"];
+                        $sql="update `alumnos_examen`  set `id_respuesta`='$id_respuesta', `fecha`='$fecha', `puntaje`='$puntajeObtenido', `respuesta`='$respuestaAlumno'
+                        where id_alumnos_examen='$id_alumnos_examen' ";
+                        $res=$mysqli->query($sql);
+
+                    }else{
+				$sql="INSERT INTO `alumnos_examen` (`id_alumnos_examen`, `id_usuario`, `id_examen`, `id_pregunta`, `id_respuesta`, `fecha`, `estado`, `puntaje`, `respuesta`)
+                 VALUES (NULL, '$id_usuario', '$id_examen', '$id_pregunta', '$id_respuesta', '$fecha', '1', '$puntajeObtenido', '$respuestaAlumno');";
+ 				$res=$mysqli->query($sql);
+                }
+
+
+            }
+
+
+				?>
+				<div class="callout callout-info">
+                    <p>Usted ha finalizado el examen. Muchas gracias</p>
+                  </div>
+				<?php
+				}
+				?>
+
+
+
+        <?php 
+				$id_examen=filtroInyeccion($_POST["id_examen"]);
+                    $sql="select * from examen where estado='1' and id_examen='$id_examen'";
 					$res=$mysqli->query($sql);
 					$fila=mysqli_fetch_array($res);
 
@@ -54,11 +114,26 @@ where preguntas.estado='1' and id_examen='$id_examen' order by numero asc
             <div class="col-md-8">
 
                 <form action="verExamen.php" method="POST">
-                <INPUT TYPE="hidden" value="<?php echo $fila["id_examen"];?>" name="id_examen">
+                <INPUT TYPE="hidden" value="<?php echo $id_examen;?>" name="id_examen">
 
 
                      <?php
+                     
 						while($filaPreguntas=mysqli_fetch_array($resPreguntas)){ 
+
+
+                            $tipo=$filaPreguntas["tipo"];
+                            $id_pregunta=$filaPreguntas["id_pregunta"];
+
+              
+                            $sqlRespuestas="select alumnos_examen.* from alumnos_examen 
+                             where estado='1' and id_examen='$id_examen' and id_pregunta='$id_pregunta'  and id_usuario='$id_usuario'  ";
+                            $resRespuestas=$mysqli->query($sqlRespuestas);
+                             $filaRespuestas=mysqli_fetch_array($resRespuestas);
+                            $respuestaUsuariodb=$filaRespuestas["id_respuesta"];
+                            $respuestaUsuariodbText=$filaRespuestas["respuesta"];
+                           
+
 					  ?>
                         
                         <div class="box box-primary box-solid">
@@ -77,8 +152,7 @@ where preguntas.estado='1' and id_examen='$id_examen' order by numero asc
                 <label>Respuesta: </label><br>
                         
                         <?php 
-                        $tipo=$filaPreguntas["tipo"];
-                        $id_pregunta=$filaPreguntas["id_pregunta"];
+                 
 
                         if($tipo=="select"){
                             ?>
@@ -91,6 +165,12 @@ where preguntas.estado='1' and id_examen='$id_examen' order by numero asc
                             <?php if($filaPreguntas["respuesta5"]>0){ ?><option value="<?php echo $filaPreguntas["respuesta5"];?>"><?php echo $filaPreguntas["respuesta5texto"];?></option>    <?php } ?>
 
                             </select>
+
+
+                            <script type="text/javascript">
+                            document.getElementById("pregunta<?php echo $id_pregunta;?>").value=<?php echo $respuestaUsuariodb;?>;
+                            </script>
+
                             <?php
                         }
                         
@@ -98,31 +178,36 @@ where preguntas.estado='1' and id_examen='$id_examen' order by numero asc
                         if($tipo=="check"){
                         ?>
                           <?php if($filaPreguntas["respuesta1"]>0 ){ ?>
-                            <p>  <input type="checkbox"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"
+                            <p>  <input type="checkbox"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta1"];?>"  name="pregunta<?php echo $id_pregunta;?>"
                               value="<?php echo $filaPreguntas["respuesta1"];?>"> 
                           <?php echo $filaPreguntas["respuesta1texto"];?></p>
                           <?php  }  ?>
                           <?php if($filaPreguntas["respuesta2"]>0 ){ ?><p>
-                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  
+                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta2"];?>"  name="pregunta<?php echo $id_pregunta;?>"  
                           value="<?php echo $filaPreguntas["respuesta2"];?>"> 
                           <?php echo $filaPreguntas["respuesta2texto"];?></p>
                           <?php  }  ?>
                           <?php if($filaPreguntas["respuesta3"]>0 ){ ?><p>
-                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"
+                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta3"];?>"  name="pregunta<?php echo $id_pregunta;?>"
                             value="<?php echo $filaPreguntas["respuesta3"];?>">
                           <?php echo $filaPreguntas["respuesta3texto"];?></p>
                           <?php  }  ?>
                           <?php if($filaPreguntas["respuesta4"]>0 ){ ?><p>
-                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta;?>"  
-                          name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta4"];?>"> 
+                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta4"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta4"];?>"> 
                           <?php echo $filaPreguntas["respuesta4texto"];?></p>
                           <?php  }  ?>
                           <?php if($filaPreguntas["respuesta5"]>0 ){ ?><p>
-                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"
+                          <input type="checkbox"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta5"];?>"  name="pregunta<?php echo $id_pregunta;?>"
                             value="<?php echo $filaPreguntas["respuesta5"];?>"> 
                           <?php echo $filaPreguntas["respuesta5texto"];?></p>
                           <?php  }  ?>
                              
+              
+                          <script type="text/javascript">
+                             document.getElementById("pregunta<?php echo $id_pregunta . $respuestaUsuariodb;?>").checked = true;
+                             </script>
+ 
+
                         <?php  }   
 
 
@@ -130,44 +215,50 @@ where preguntas.estado='1' and id_examen='$id_examen' order by numero asc
                         if($tipo=="radio"){
                         ?>
                           <?php if($filaPreguntas["respuesta1"]>0 ){ ?><p>
-                            <input type="radio"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta1"];?>">   
+                            <input type="radio"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta1"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta1"];?>">   
                           <?php echo $filaPreguntas["respuesta1texto"];?>
                           </p>  <?php  }  ?>
                           <?php if($filaPreguntas["respuesta2"]>0 ){ ?><p>
-                            <input type="radio"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta2"];?>">   
+                            <input type="radio"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta2"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta2"];?>">   
                           <?php echo $filaPreguntas["respuesta2texto"];?>
                           </p> <?php  }  ?>
                           <?php if($filaPreguntas["respuesta3"]>0 ){ ?><p>
-                            <input type="radio"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta3"];?>">  
+                            <input type="radio"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta3"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta3"];?>">  
                           <?php echo $filaPreguntas["respuesta3texto"];?>
                           </p>  <?php  }  ?>
                           <?php if($filaPreguntas["respuesta4"]>0 ){ ?><p>
-                            <input type="radio"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta4"];?>">  
+                            <input type="radio"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta4"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta4"];?>">  
                           <?php echo $filaPreguntas["respuesta4texto"];?>
                           </p>   <?php  }  ?>
                           <?php if($filaPreguntas["respuesta5"]>0 ){ ?><p>
-                            <input type="radio"  id="pregunta<?php echo $id_pregunta;?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta5"];?>"> 
+                            <input type="radio"  id="pregunta<?php echo $id_pregunta.$filaPreguntas["respuesta5"];?>"  name="pregunta<?php echo $id_pregunta;?>"  value="<?php echo $filaPreguntas["respuesta5"];?>"> 
                           <?php echo $filaPreguntas["respuesta5texto"];?>
                           </p> <?php  }  ?>
                              
-                        <?php  }
+
+                          <script type="text/javascript">
+                             document.getElementById("pregunta<?php echo $id_pregunta . $respuestaUsuariodb;?>").checked = true;
+                             </script>
+ 
+                          <?php  }
                         
                         if($tipo=="textarea"){
                             ?>
                             <textarea  id="pregunta<?php echo $id_pregunta;?>"  
-                            name="pregunta<?php echo $id_pregunta;?>" ></textarea>
+                            name="pregunta<?php echo $id_pregunta;?>" ><?php echo $respuestaUsuariodbText;?></textarea>
 
                         <?php  }  ?>
-                        </div>
-              </div> 
+
+                        </div><!-- /.box-body -->
+              </div><!-- /.box -->
 
 
+              
 
-			
-			 
                       
 					  <?php
-						}
+						} 
+                        //fin de whule que arma preguntas
 					  ?>
                        </div>
                    <div class="col-md-12" >

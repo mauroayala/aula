@@ -36,11 +36,16 @@
 								 <div class="col-md-6">
 					              <div class="box box-widget widget-user">
                 <!-- Add the bg color to the header using any of the bg-* classes -->
-                <div class="widget-user-header bg-aqua-active">
+                <div class="widget-user-header bg-aqua-active" style="    background-color: #3c8dbc !important;">
                   <h3 class="widget-user-username"><?php echo $fila["titulo"];?></h3>
                   <h5 class="widget-user-desc"><?php echo $fila["descripcion"];?></h5>
                 </div>
            
+                <div class="widget-user-image">
+                  <img class="img-circle" src="dist/img/user1-128x128.jpg" alt="User Avatar">
+                </div>
+
+
                 <div class="box-footer">
                   <div class="row">
                     <div class="col-sm-4 border-right">
@@ -64,12 +69,40 @@
                   </div><!-- /.row -->
                 </div>
 				
-				     <div class="box-footer" style="text-align:center;">
-				      	 <a class="btn btn-app" href="examen.php?id=<?php echo $fila["id_examen"];?>">
-                    <i class="fa fa-play"></i> Ingresar
+
+
+
+
+                <div class="box-footer" style="text-align:center;">
+
+                <?php 
+                        $id_usuario=$_SESSION['idusuario'];
+
+                    $id_examen=$fila["id_examen"];
+                    $validoSiRespondio="select * from alumnos_examen where id_usuario='$id_usuario' and id_examen='$id_examen' ";
+                    $resvalidoSiRespondio=$mysqli->query($validoSiRespondio);
+ 
+                    $row=mysqli_num_rows($resvalidoSiRespondio);
+                    if($row>0){
+                      ?>
+                   <form action="verExamen.php" method="POST"> 
+                   <input type="hidden" name="id_examen" value="<?php echo $id_examen;?>">
+                   <input type="submit" value="Ver Examen" class="btn btn-warning">
+                   </form>
+                  <?php 
+                    }else{
+                  ?>
+
+				      	  <a class="btn btn-app" href="examen.php?id=<?php echo $id_examen;?>">
+                    <i class="fa fa-file"></i> Realizar Examen
                   </a>
- 					  </div>
-					  
+
+                  <?php }  ?>
+
+ 					     </div>
+
+         
+                    
               </div><!-- /.widget-user -->
 			  
 			                </div><!-- /.widget-user -->
